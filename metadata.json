@@ -1,0 +1,6 @@
+{
+  "name": "Pizzaria Prince - Restaurante e Encomendas Online",
+  "description": "Pizzaria Prince em Centralidade de Cacuaco, Angola. Pizzas artesanais premium, acompanhamentos, combos e sistema de encomendas online.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
