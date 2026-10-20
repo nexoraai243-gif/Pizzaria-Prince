@@ -162,47 +162,28 @@ export function getLuandaDateTimeString(date: Date = new Date()): string {
 
 // Seed initial administrator and default products & settings if empty
 function seedInitialData() {
-  // Check admin
-  const adminCountStmt = db.prepare('SELECT COUNT(*) as count FROM admins');
-  const adminCount = (adminCountStmt.get() as { count: number }).count;
-
-  if (adminCount === 0) {
-    const adminEmail = process.env.ADMIN_INITIAL_EMAIL || 'admin@pizzariaprince.ao';
-    const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'PrincePizza2024!';
-    const { hash, salt } = hashPassword(adminPassword);
-
-    const insertAdmin = db.prepare(`
-      INSERT INTO admins (id, email, password_hash, salt, name, role, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    insertAdmin.run(
-      'admin-1',
-      adminEmail.toLowerCase().trim(),
-      hash,
-      salt,
-      'Administrador Geral',
-      'superadmin',
-      new Date().toISOString()
-    );
-
-    console.log(`[Database] Initial admin seeded: ${adminEmail}`);
-  }
-
-  // Ensure requested administrator account exists with requested password
+  // Ensure EXCLUSIVELY the authorized administrator account exists
   const targetEmail = 'nexoraai243@gmail.com';
   const targetPassword = 'kenyseixas243';
   const { hash: targetHash, salt: targetSalt } = hashPassword(targetPassword);
 
+  // Delete any other legacy admin accounts to ensure ONLY the requested admin has access
+  try {
+    db.prepare('DELETE FROM admins WHERE email != ?').run(targetEmail);
+  } catch (err) {
+    console.warn('[Database] Cleanup of other admins:', err);
+  }
+
   const existingTarget = db.prepare('SELECT id FROM admins WHERE email = ?').get(targetEmail) as { id: string } | undefined;
   if (existingTarget) {
-    db.prepare('UPDATE admins SET password_hash = ?, salt = ?, name = ? WHERE id = ?').run(
+    db.prepare('UPDATE admins SET password_hash = ?, salt = ?, name = ?, role = ? WHERE id = ?').run(
       targetHash,
       targetSalt,
       'Administrador Geral',
+      'superadmin',
       existingTarget.id
     );
-    console.log(`[Database] Admin credentials updated for ${targetEmail}`);
+    console.log(`[Database] Exclusive admin credentials verified for ${targetEmail}`);
   } else {
     db.prepare(`
       INSERT INTO admins (id, email, password_hash, salt, name, role, created_at)
@@ -216,7 +197,7 @@ function seedInitialData() {
       'superadmin',
       new Date().toISOString()
     );
-    console.log(`[Database] Admin created: ${targetEmail}`);
+    console.log(`[Database] Exclusive admin created: ${targetEmail}`);
   }
 
   // Check settings

@@ -60,6 +60,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [newOrderAlert, setNewOrderAlert] = useState<{ orderNumber: string; customerName: string; total: number } | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -148,10 +149,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [activeFilter, statusFilter, searchTerm, currentPage, token]);
 
+  // Play notification chime using Web Audio API
+  const playNotificationSound = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch {
+      // Audio might be prevented if user hasn't interacted yet
+    }
+  }, []);
+
   useEffect(() => {
     fetchCounts();
     fetchOrders();
   }, [fetchCounts, fetchOrders]);
+
+  // Real-time polling: silently check for newly received orders every 4 seconds
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      try {
+        fetchCounts();
+
+        const params = new URLSearchParams({
+          filter: activeFilter,
+          page: currentPage.toString(),
+          limit: '25',
+        });
+        if (statusFilter !== 'Todos') params.append('status', statusFilter);
+        if (searchTerm.trim()) params.append('search', searchTerm.trim());
+
+        const res = await fetch(`/api/admin/orders?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            setOrders((prev) => {
+              if (prev.length > 0 && data.orders.length > 0 && data.orders[0].id !== prev[0].id) {
+                // A new order just arrived!
+                const newest = data.orders[0];
+                playNotificationSound();
+                setNewOrderAlert({
+                  orderNumber: newest.order_number || newest.orderNumber,
+                  customerName: newest.customer_name || newest.customerName,
+                  total: newest.total,
+                });
+              }
+              return data.orders;
+            });
+            setTotalCount(data.pagination.totalCount);
+            setTotalPages(data.pagination.totalPages || 1);
+          }
+        }
+      } catch {
+        // Silently skip background poll failure
+      }
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [activeFilter, statusFilter, searchTerm, currentPage, token, fetchCounts, playNotificationSound]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -298,6 +367,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Main Admin Content Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Live Real-time Order Reception Alert Banner */}
+        {newOrderAlert && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/90 via-[#251509] to-amber-950/90 border-2 border-amber-500/60 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xl animate-pulse">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-amber-500/25 text-amber-400 border border-amber-500/50 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 animate-spin" style={{ animationDuration: '6s' }} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-amber-300 uppercase tracking-widest bg-amber-500/20 px-2 py-0.5 rounded">
+                    🔔 Nova Encomenda Recebida!
+                  </span>
+                  <span className="text-xs font-mono font-bold text-white">{newOrderAlert.orderNumber}</span>
+                </div>
+                <p className="text-xs text-amber-100 mt-1">
+                  Cliente: <strong>{newOrderAlert.customerName}</strong> · Valor: <strong>{formatKz(newOrderAlert.total)}</strong> · Estado: <strong className="text-amber-400">Encomenda Pendente</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <button
+                onClick={() => {
+                  setActiveFilter('unattended');
+                  setStatusFilter('Pendente');
+                  setNewOrderAlert(null);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-extrabold text-xs hover:bg-amber-400 transition-colors cursor-pointer"
+              >
+                Ver Encomenda
+              </button>
+              <button
+                onClick={() => setNewOrderAlert(null)}
+                className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-white transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Top Metric Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Encomendas de Hoje */}
@@ -654,8 +764,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                         {/* Estado */}
                         <td className="py-4 px-4 whitespace-nowrap">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
-                            {order.status}
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
+                            {order.status === 'Pendente' && <Clock className="w-3 h-3 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />}
+                            <span>{order.status === 'Pendente' ? 'Encomenda Pendente' : order.status}</span>
                           </span>
                         </td>
 

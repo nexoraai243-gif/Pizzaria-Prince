@@ -15,6 +15,7 @@ import {
   Plus,
   ArrowRight,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatKz, translateServiceType } from '../utils/formatters';
@@ -529,23 +530,26 @@ export const OrderCheckout: React.FC<OrderCheckoutProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-xl font-extrabold text-sm sm:text-base tracking-wider uppercase bg-gradient-to-r from-[#C82026] to-[#8F171B] hover:from-[#d92930] hover:to-[#a11a1f] disabled:opacity-50 text-white shadow-xl shadow-red-950/70 hover:shadow-red-800/90 transition-all cursor-pointer flex items-center justify-center gap-2 border border-red-500/40"
+                className="w-full py-4 rounded-xl font-black text-sm sm:text-base tracking-wider uppercase bg-gradient-to-r from-[#C82026] via-[#d92930] to-[#8F171B] hover:from-[#ea333a] hover:to-[#a11a1f] disabled:opacity-50 text-white shadow-xl shadow-red-950/70 hover:shadow-red-800/90 transition-all cursor-pointer flex items-center justify-center gap-2.5 border border-red-500/40 active:scale-[0.99]"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
                     <span>A Processar Encomenda...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>Enviar Encomenda</span>
+                    <Clock className="w-5 h-5 text-amber-300" />
+                    <span>FINALIZAR ENCOMENDA</span>
                   </>
                 )}
               </button>
 
-              <p className="text-[11px] text-center text-[#A5A5A5]">
-                Ao clicar em "Enviar Encomenda", o seu pedido será registado e receberá uma referência para acompanhamento e contacto directo pelo WhatsApp.
+              <p className="text-[11px] text-center text-[#A5A5A5] flex items-center justify-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>
+                  Ao clicar em <strong>Finalizar Encomenda</strong>, o seu pedido é enviado à área restrita com estado <strong>Encomenda Pendente</strong> para início imediato da preparação.
+                </span>
               </p>
             </div>
           </form>

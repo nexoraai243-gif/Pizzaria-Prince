@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, Lock, Mail, AlertCircle, Loader2, ArrowLeft, KeyRound } from 'lucide-react';
+import { Crown, Lock, Mail, AlertCircle, Loader2, ArrowLeft, KeyRound, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface AdminLoginProps {
@@ -9,7 +9,7 @@ interface AdminLoginProps {
 
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onBackToSite }) => {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('nexoraai243@gmail.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +19,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onBackToSite 
     setError(null);
 
     if (!email || !password) {
-      setError('Por favor, introduza o e-mail e a palavra-passe de administrador.');
+      setError('Por favor, introduza a palavra-passe da conta de administrador.');
       return;
     }
 
@@ -59,8 +59,12 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onBackToSite 
               PIZZARIA <span className="text-[#C82026]">PRINCE</span>
             </h1>
             <p className="text-xs uppercase tracking-widest text-[#A5A5A5] mt-0.5">
-              Área de Gestão e Administração
+              Área Restrita do Administrador
             </p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1F1F1F] border border-red-500/30 text-[11px] text-[#A8D5A2] mt-2">
+              <Shield className="w-3.5 h-3.5 text-[#C82026]" />
+              <span>Acesso Exclusivo: nexoraai243@gmail.com</span>
+            </div>
           </div>
         </div>
 
@@ -119,23 +123,20 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onBackToSite 
                 <span>A autenticar...</span>
               </>
             ) : (
-              <span>Entrar no Painel</span>
+              <span>Entrar na Área Restrita</span>
             )}
           </button>
         </form>
 
-        {/* Demo Helper Pill */}
+        {/* Exclusive Quick Fill Helper */}
         <div className="pt-2 border-t border-white/10 text-center">
-          <p className="text-[11px] text-[#A5A5A5] mb-2">
-            Credenciais padrão configuradas na base de dados:
-          </p>
           <button
             type="button"
             onClick={fillDefaultCredentials}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1F1F1F] hover:bg-[#2A2A2A] text-xs font-medium text-amber-300 border border-amber-500/30 transition-colors"
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>Preencher Credenciais de Administrador</span>
+            <span>Preencher Credenciais (nexoraai243@gmail.com)</span>
           </button>
         </div>
 
