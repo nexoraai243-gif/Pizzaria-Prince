@@ -17,20 +17,21 @@ import { AdminMenu } from './components/admin/AdminMenu';
 import { AdminSettings } from './components/admin/AdminSettings';
 import { AdminAuditLogs } from './components/admin/AdminAuditLogs';
 import { Product, RestaurantSettings } from './types';
+import { INITIAL_PRODUCTS, DEFAULT_SETTINGS } from './data/menuProducts';
 
 function MainApp() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { setDeliveryFeeAmount } = useCart();
+  const { items, setDeliveryFeeAmount } = useCart();
 
   // App routing / view state: 'storefront' | 'admin'
   const [currentView, setCurrentView] = useState<'storefront' | 'admin'>('storefront');
   const [adminSubView, setAdminSubView] = useState<'dashboard' | 'menu' | 'settings' | 'audit'>('dashboard');
 
-  // Storefront category & data states
+  // Storefront category & data states - initialized with instant products for 100% of visitors
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [settings, setSettings] = useState<RestaurantSettings | null>(null);
-  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(true);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [settings, setSettings] = useState<RestaurantSettings>(DEFAULT_SETTINGS);
+  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(false);
 
   // Order confirmation modal state
   const [confirmedOrderData, setConfirmedOrderData] = useState<any | null>(null);
@@ -143,9 +144,13 @@ function MainApp() {
 
   const handleStartOrder = () => {
     setCurrentView('storefront');
-    const el = document.getElementById('menu-pizzas');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+    if (items.length > 0) {
+      const el = document.getElementById('encomendar');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setSelectedCategory('Todos');
+      const el = document.getElementById('menu-pizzas');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -227,11 +232,9 @@ function MainApp() {
 
       {/* Hero Section */}
       <Hero
-        onOrderClick={() => {
-          const el = document.getElementById('encomendar');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }}
+        onOrderClick={handleStartOrder}
         onMenuClick={() => {
+          setSelectedCategory('Todos');
           const el = document.getElementById('menu-pizzas');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
@@ -260,10 +263,12 @@ function MainApp() {
 
       {/* Dedicated Customer Order Form */}
       <OrderCheckout
+        products={products}
         onOrderSuccess={(data) => {
           setConfirmedOrderData(data);
         }}
         onBrowseMenu={() => {
+          setSelectedCategory('Todos');
           const el = document.getElementById('menu-pizzas');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}

@@ -292,7 +292,7 @@ function seedInitialData() {
       {
         id: 'prod-quatro-queijos',
         name: 'Pizza Quatro Queijos',
-        description: 'Uma explosão de sabor com mozzarella, gorgonzola cremoso, parmesão envelhecido e catupiry suave.',
+        description: 'A clássica pizza de queijo por excelência: mozzarella derretida em abundância, gorgonzola cremoso, parmesão envelhecido e catupiry suave.',
         category: 'Pizzas de Queijo',
         image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
         price: 11000,
@@ -306,9 +306,25 @@ function seedInitialData() {
         featured: 1,
       },
       {
+        id: 'prod-queijo-fiambre',
+        name: 'Pizza de Queijo & Fiambre',
+        description: 'Para quem adora pizza de queijo simples e saborosa: queijo mozzarella derretido duplo, fiambre nobre fatiado, molho de tomate caseiro e orégãos aromáticos.',
+        category: 'Pizzas de Queijo',
+        image_url: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=800&q=80',
+        price: 9500,
+        sizes_json: JSON.stringify([
+          { name: 'Pequena', multiplier: 0.75, price: 7500 },
+          { name: 'Média', multiplier: 1.0, price: 9500, default: true },
+          { name: 'Grande', multiplier: 1.35, price: 13000 },
+          { name: 'Familiar', multiplier: 1.8, price: 17500 },
+        ]),
+        available: 1,
+        featured: 1,
+      },
+      {
         id: 'prod-vegetariana',
         name: 'Pizza Vegetariana',
-        description: 'Cogumelos frescos laminados, pimentos coloridos, cebola roxa crocante, azeitonas pretas e orégãos frescos.',
+        description: 'Cogumelos frescos laminados, pimentos coloridos, cebola roxa crocante, azeitonas pretas, queijo mozzarella e orégãos frescos.',
         category: 'Pizzas Vegetarianas',
         image_url: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=800&q=80',
         price: 9000,
@@ -338,6 +354,22 @@ function seedInitialData() {
         featured: 1,
       },
       {
+        id: 'prod-calabresa',
+        name: 'Pizza Calabresa com Queijo',
+        description: 'Fatias de linguiça calabresa artesanal, generosa cobertura de queijo mozzarella, cebola roxa fininha e azeitonas pretas.',
+        category: 'Pizzas de Carne',
+        image_url: 'https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?auto=format&fit=crop&w=800&q=80',
+        price: 10000,
+        sizes_json: JSON.stringify([
+          { name: 'Pequena', multiplier: 0.75, price: 8000 },
+          { name: 'Média', multiplier: 1.0, price: 10000, default: true },
+          { name: 'Grande', multiplier: 1.35, price: 13500 },
+          { name: 'Familiar', multiplier: 1.8, price: 18000 },
+        ]),
+        available: 1,
+        featured: 0,
+      },
+      {
         id: 'prod-especial-prince',
         name: 'Pizza Especial da Casa (Prince)',
         description: 'A joia da casa: carne picada especial, pepperoni crocante, cogumelos salteados, pimentos assados e queijo extra.',
@@ -355,8 +387,8 @@ function seedInitialData() {
       },
       {
         id: 'prod-pao-alho',
-        name: 'Pão de Alho Especial',
-        description: 'Baguete artesanal dourada no forno a lenha com manteiga de alho especial, salsa picada e queijo gratinado.',
+        name: 'Pão de Alho Especial com Queijo',
+        description: 'Baguete artesanal dourada no forno a lenha com manteiga de alho especial, salsa picada e queijo mozzarella gratinado.',
         category: 'Acompanhamentos',
         image_url: 'https://images.unsplash.com/photo-1619895092538-128341789043?auto=format&fit=crop&w=800&q=80',
         price: 3500,
@@ -407,14 +439,24 @@ function seedInitialData() {
       },
     ];
 
-    const insertProd = db.prepare(`
+    const upsertProd = db.prepare(`
       INSERT INTO products (id, name, description, category, image_url, price, sizes_json, available, featured, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        description = excluded.description,
+        category = excluded.category,
+        image_url = excluded.image_url,
+        price = excluded.price,
+        sizes_json = excluded.sizes_json,
+        available = 1,
+        featured = excluded.featured,
+        updated_at = excluded.updated_at
     `);
 
     const now = new Date().toISOString();
     for (const p of defaultProducts) {
-      insertProd.run(
+      upsertProd.run(
         p.id,
         p.name,
         p.description,
@@ -428,7 +470,7 @@ function seedInitialData() {
         now
       );
     }
-    console.log(`[Database] ${defaultProducts.length} default menu products seeded`);
+    console.log(`[Database] ${defaultProducts.length} menu products verified and ensured active`);
   }
 }
 

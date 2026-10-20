@@ -12,12 +12,17 @@ import {
   Loader2,
   CheckCircle2,
   ShoppingBag,
+  Plus,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatKz, translateServiceType } from '../utils/formatters';
-import { ServiceType } from '../types';
+import { ServiceType, Product } from '../types';
+import { INITIAL_PRODUCTS } from '../data/menuProducts';
 
 interface OrderCheckoutProps {
+  products?: Product[];
   onOrderSuccess: (orderData: {
     orderNumber: string;
     orderId: string;
@@ -35,11 +40,13 @@ interface OrderCheckoutProps {
 }
 
 export const OrderCheckout: React.FC<OrderCheckoutProps> = ({
+  products = INITIAL_PRODUCTS,
   onOrderSuccess,
   onBrowseMenu,
 }) => {
   const {
     items,
+    addItem,
     subtotal,
     deliveryFee,
     total,
@@ -183,20 +190,81 @@ export const OrderCheckout: React.FC<OrderCheckoutProps> = ({
           </p>
         </div>
 
-        {/* Empty Cart Notice if user jumps directly */}
+        {/* Empty Cart with Instant Product Showcase */}
         {items.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-[#151515] border border-white/10 text-center space-y-4">
-            <ShoppingBag className="w-12 h-12 text-[#C82026] mx-auto" />
-            <h3 className="text-lg font-bold text-white">O carrinho está vazio</h3>
-            <p className="text-sm text-[#A5A5A5] max-w-md mx-auto">
-              Para efetuar uma encomenda, selecione as suas pizzas e acompanhamentos favoritos no menu.
-            </p>
-            <button
-              onClick={onBrowseMenu}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#C82026] to-[#8F171B] text-white font-bold text-sm tracking-wide shadow-lg cursor-pointer"
-            >
-              Consultar o Menu
-            </button>
+          <div className="p-6 sm:p-8 rounded-3xl bg-[#151515] border border-white/10 space-y-6 shadow-xl text-left">
+            <div className="text-center space-y-2 max-w-xl mx-auto">
+              <div className="w-12 h-12 rounded-full bg-[#C82026]/20 text-[#C82026] flex items-center justify-center mx-auto">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white font-['Montserrat']">
+                Escolha as Suas Pizzas para Encomendar
+              </h3>
+              <p className="text-xs sm:text-sm text-[#A5A5A5] leading-relaxed">
+                Ainda não tem itens selecionados no carrinho. Pode adicionar qualquer um dos nossos serviços e pizzas mais pedidos abaixo para prosseguir logo com a encomenda:
+              </p>
+            </div>
+
+            {/* Quick-add popular items */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+              {(products.length > 0 ? products.slice(0, 3) : INITIAL_PRODUCTS.slice(0, 3)).map((prod) => {
+                const defaultSize = prod.sizes?.[0] || { name: 'Média', price: prod.price };
+                return (
+                  <div
+                    key={prod.id}
+                    className="p-4 rounded-2xl bg-[#1F1F1F] border border-white/10 hover:border-red-500/30 transition-all flex flex-col justify-between space-y-3 group shadow-md"
+                  >
+                    <div className="flex gap-3 items-center">
+                      <img
+                        src={prod.image_url}
+                        alt={prod.name}
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="overflow-hidden">
+                        <span className="text-[10px] font-bold text-[#A8D5A2] uppercase tracking-wider block">
+                          {prod.category}
+                        </span>
+                        <h4 className="text-sm font-bold text-white truncate font-['Montserrat']">
+                          {prod.name}
+                        </h4>
+                        <p className="text-xs text-[#C82026] font-extrabold mt-0.5">
+                          {formatKz(defaultSize.price)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        addItem({
+                          productId: prod.id,
+                          name: prod.name,
+                          sizeName: defaultSize.name,
+                          unitPrice: defaultSize.price,
+                          quantity: 1,
+                          imageUrl: prod.image_url,
+                        });
+                      }}
+                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#C82026] to-[#8F171B] hover:from-[#d92930] hover:to-[#a11a1f] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Adicionar & Continuar ({defaultSize.name})</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={onBrowseMenu}
+                className="px-6 py-3.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-white text-xs sm:text-sm font-bold tracking-wide border border-white/10 hover:border-white/25 transition-all cursor-pointer inline-flex items-center gap-2 shadow-lg"
+              >
+                <span>Ver Todo o Menu de Pizzas & Acompanhamentos</span>
+                <ArrowRight className="w-4 h-4 text-[#C82026]" />
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-8">
